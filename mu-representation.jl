@@ -2,14 +2,13 @@ using PhyloNetworks, DataStructures
 
 const Node = PhyloNetworks.Node;
 const Edge = PhyloNetworks.Edge;
-const Labels = AbstractVector{<:AbstractString};
 
 
 """
 `N` is treated as semi-directed - i.e. all edges are treated as undirected except
 hybrid edges which are treated as directed. Leaf edges also treated as undirected.
 """
-function edge_μ_semi_directed_naive(N::HybridNetwork; L::Labels=tipLabels(N))
+function edge_μ_semi_directed_naive(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N))
 
     # Each edge has 1 entry if it's a hybrid, two if it's not.
     # In the tree-edge case, we need to keep track of which direction both entries correspond to.
@@ -51,7 +50,7 @@ function edge_μ_semi_directed_naive(N::HybridNetwork; L::Labels=tipLabels(N))
     j = 0;
     while !isempty(Q)
         j += 1;
-        if j > 10000 error("Looped $(j) times - exiting.") end
+        if j > 100000 error("Looped $(j) times - exiting.") end
 
         edge, (from_node, to_node) = dequeue!(Q)
         direction = (from_node, to_node)
@@ -80,25 +79,63 @@ function edge_μ_semi_directed_naive(N::HybridNetwork; L::Labels=tipLabels(N))
         end
     end
 
-    # Still need the \mu_R(T) bit
+    @warn "Mappings for root components are not yet computed"
     return collect(values(mapping))
 
+
+    # Get the root components of the network, then calculate \mu_R(T) for each root component T
+    root_components = gather_root_components(N)
+    root_mappings = []
+    for T in root_components
+        # T <: Vector{Union{Node, Edge}}
+        # if trivial, T is the root node
+        # if non-trivial, T will have at least 1 edge E = uv, in which case
+        # \mu_R(T) is equivalent regardless of which E we choose, so we just pick the first E we see
+        if length(T) == 1
+            # trivial - T = [<root node>]
+            # QUESTION: from my understanding of Lemma 18 and Definition 10, when T is trivial (a single node), \mu_r(T)
+            #           is simply \mu(T[1], N) as defined at the beginning of Section IV, i.e. {#1, #2, ..., #n} where
+            #           #i is the number of paths connecting the root to leaf i - is this correct?
+            typeof(T[1]) <: Node || error("SANITY CHECK FAILED: T[1] has type $(typeof(T[1])) when T has size $(length(T))")
+            root_node = T[1]
+            root_node_mapping = zeros(length(L))
+            for E in root_node.edge
+                direction = (root_node, other_node(E, root_node))
+                root_node_mapping += mappings[(E, direction)][1]
+            end
+            push!(root_mappings, (root_node_mapping, 'r'))
+        else
+            # non-trivial - take the first edge in the set
+            any(typeof(comp) <: Edge for comp in T) || error("SANITY CHECK FAILED: no edges in root component of size $(length(T)) ??")
+            E = T[findfirst(component -> typeof(component) <: Edge, T)]
+
+            E_mapping = zeros(length(L))
+            for direction in ((getparent(E), getchild(E)), (getchild(E), getparent(E)))
+                E_mapping += mappings[E, direction][1]
+            end
+            push!(root_mappings, (E_mapping, 'r'))
+        end
+    end
+    @show root_mappings
+
+
+    return [collect(values(mapping)); root_mappings]
 end
-tre1 = readTopology("((A,B)ab,(C,D)cd)r;");
-tre1_map = edge_μ_semi_directed_naive(tre1);
-edge_μ_dist(tre1, tre1, true)
-
-N1 = readTopology("((a,#H1)aa,b,(((c)cc)#H1,d)cd)r;")
-N2 = readTopology("((a,#H1),b,(((c))#H1,d));")
-edge_μ_semi_directed_naive(N1)
-edge_μ_dist(N1, N2, true)
-
-
 
 
 function other_node(edge::Edge, node::Node)
     return edge.node[1] == node ? edge.node[2] : edge.node[1]
 end
+
+
+function gather_root_components(N::HybridNetwork)
+    # A root component is an undirected, maximal component of the network
+    #
+    # At the moment, I am not entirely clear on what is and is not a root component, eg:
+    # QUESTION: the leaf node h and its parent nodes are undirected components,
+    #           so why are they not root components?
+end
+
 
 
 # Naive algorithm for computing the node-based μ-representation of network `N`.
