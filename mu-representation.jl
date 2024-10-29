@@ -137,61 +137,6 @@ function gather_root_components(N::HybridNetwork)
 end
 
 
-
-# Naive algorithm for computing the node-based μ-representation of network `N`.
-#
-# Note: treats `N` as ROOTED, i.e. the only "root component" is trivial: the root itself
-#
-# Note: all edges in `N` are treated as directed! Thus, for network (A,B) we
-# would say there are **0** paths from A to B or vice versa.
-#
-# The node-based μ-representation of `N` is as follows:
-#     \$\$\mu_V(N) = \int \mu(v, N); v\in V(N)\$\$
-# where \$V(N)\$ is the set of vertices in `N` and \$\mu(v, N)\$ is the tuple \$(\mu_1(v), \dots, \mu_n(v))\$ where
-# \$\mu_i(v)\$ is the number of paths in `N` from \$v\$ to the i'th leaf of `N`.
-#
-# Returns a `Dict{PhyloNetworks.Node, Int}` object mapping each leaf \$l_i\$ in `N` to \$\sum_{v\in V} \mu(v,N)[i]\$,
-#    i.e. the number of paths from a given node to leaf \$i\$ summed across all nodes in `N`.
-function node_μ_naive(N::HybridNetwork)
-
-    L = tipLabels(N)
-    mapping = Dict{PhyloNetworks.Node, Int}([leaf => 0 for leaf in N.leaf])
-
-    for node in N.node
-        for desc_leaf in get_descendant_leaves(node, multiplicity=true)
-            mapping[desc_leaf] += 1
-        end
-    end
-
-    return mapping
-
-end
-
-
-function edge_μ_naive(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N), unrooted::Bool=false)
-    # {(μ_r(T), :r)} : T \in R is exactly \mu(r, N), r the root node
-    !unrooted || error("NOT IMPLEMENTED FOR UNROOTED TREES/NETWORKS")
-
-    leaf_idx = Dict{AbstractString,Int}([leaf => i for (i, leaf) in enumerate(L)])
-    mapping = Dict{Union{Edge, Node}, Tuple{Vector{Int},Char}}([e => (zeros(N.numTaxa), ifelse(e.hybrid, 'h', 't')) for e in N.edge])
-
-    for edge in N.edge
-        # \mu(edge) = \mu(getchild(edge), N), which we get w/ `get_descendant_leaves` with multiplicity
-        for desc_leaf in get_descendant_leaves(getchild(edge), multiplicity=true)
-            mapping[edge][1][leaf_idx[desc_leaf.name]] += 1
-        end
-    end
-
-    # then, since we assume rooted, for the rooted components, just add the root's \mu(root, N)
-    mapping[N.node[N.root]] = (zeros(N.numTaxa), 'r')
-    for desc_leaf in get_descendant_leaves(N.node[N.root], multiplicity=true)
-        mapping[N.node[N.root]][1][leaf_idx[desc_leaf.name]] += 1
-    end
-
-    return collect(values(mapping))
-end
-
-
 function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork, semi_directed::Bool=true)
     (N1.numTaxa == N2.numTaxa && all(t in tipLabels(N2) for t in tipLabels(N1))) || error("N1 and N2 must be defined on the same leaf set.")
 
