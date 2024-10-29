@@ -8,6 +8,6 @@ for edge in star_tre.edge edge.length = 0.0 end
 sim_tres = simulatecoalescent(star_tre, NSIM+1, 1)
 
 for j = 1:NSIM
-    @test edge_μ_dist(sim_tres[j], sim_tres[j+1], true) == 2*hardwiredClusterDistance(sim_tres[j], sim_tres[j+1], false)
+    @test edge_μ_dist(sim_tres[j], sim_tres[j+1]) == 2*hardwiredClusterDistance(sim_tres[j], sim_tres[j+1], false)
 end
 

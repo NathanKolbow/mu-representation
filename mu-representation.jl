@@ -137,7 +137,7 @@ function gather_root_components(N::HybridNetwork)
 end
 
 
-function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork, semi_directed::Bool=true)
+function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork; semi_directed::Bool=true)
     (N1.numTaxa == N2.numTaxa && all(t in tipLabels(N2) for t in tipLabels(N1))) || error("N1 and N2 must be defined on the same leaf set.")
 
     L = tipLabels(N1)
