@@ -141,8 +141,8 @@ function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork, semi_directed::Bool=
     (N1.numTaxa == N2.numTaxa && all(t in tipLabels(N2) for t in tipLabels(N1))) || error("N1 and N2 must be defined on the same leaf set.")
 
     L = tipLabels(N1)
-    N1_eμ = semi_directed ? edge_μ_semi_directed(N1; L=L) : edge_μ(N1; L=L)
-    N2_eμ = semi_directed ? edge_μ_semi_directed(N2; L=L) : edge_μ(N2; L=L)
+    N1_eμ = semi_directed ? edge_μ_semi_directed(N1; L=L) : error("only semi-directed allowed")
+    N2_eμ = semi_directed ? edge_μ_semi_directed(N2; L=L) : error("only semi-directed allowed")
 
     return length(symdiff(N1_eμ, N2_eμ))
 end
