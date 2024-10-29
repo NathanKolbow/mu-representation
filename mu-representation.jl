@@ -8,7 +8,7 @@ const Edge = PhyloNetworks.Edge;
 `N` is treated as semi-directed - i.e. all edges are treated as undirected except
 hybrid edges which are treated as directed. Leaf edges also treated as undirected.
 """
-function edge_μ_semi_directed_naive(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N))
+function edge_μ_semi_directed(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N))
 
     # Each edge has 1 entry if it's a hybrid, two if it's not.
     # In the tree-edge case, we need to keep track of which direction both entries correspond to.
@@ -141,8 +141,8 @@ function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork, semi_directed::Bool=
     (N1.numTaxa == N2.numTaxa && all(t in tipLabels(N2) for t in tipLabels(N1))) || error("N1 and N2 must be defined on the same leaf set.")
 
     L = tipLabels(N1)
-    N1_eμ = semi_directed ? edge_μ_semi_directed_naive(N1; L=L) : edge_μ_naive(N1; L=L)
-    N2_eμ = semi_directed ? edge_μ_semi_directed_naive(N2; L=L) : edge_μ_naive(N2; L=L)
+    N1_eμ = semi_directed ? edge_μ_semi_directed(N1; L=L) : edge_μ(N1; L=L)
+    N2_eμ = semi_directed ? edge_μ_semi_directed(N2; L=L) : edge_μ(N2; L=L)
 
     return length(symdiff(N1_eμ, N2_eμ))
 end
