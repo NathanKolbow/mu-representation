@@ -3,7 +3,7 @@ include(joinpath(@__DIR__, "rf.jl"))
 include(joinpath(@__DIR__, "..", "mu-representation.jl"))
 
 const NSIM = 50;
-star_tre = readTopology("(((((A,B),C),D),E),F);");
+star_tre = readTopology("(((((((((((A,B),C),D),E),F),G),H),I),J),K),L);");
 for edge in star_tre.edge edge.length = 0.0 end
 sim_tres = simulatecoalescent(star_tre, NSIM+1, 1)
 

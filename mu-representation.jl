@@ -79,7 +79,7 @@ function edge_μ_semi_directed_naive(N::HybridNetwork; L::AbstractVector{<:Abstr
         end
     end
 
-    @warn "Mappings for root components are not yet computed"
+    # @warn "Mappings for root components are not yet computed"
     return collect(values(mapping))
 
 
