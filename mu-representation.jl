@@ -8,7 +8,7 @@ const Edge = PhyloNetworks.Edge;
 `N` is treated as semi-directed - i.e. all edges are treated as undirected except
 hybrid edges which are treated as directed. Leaf edges also treated as undirected.
 """
-function edge_μ_semi_directed(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N))
+function edge_μ_semi_directed(N::HybridNetwork; L::AbstractVector{<:AbstractString}=tipLabels(N), ignore_leaves::Bool=false)
 
     # Each edge has 1 entry if it's a hybrid, two if it's not.
     # In the tree-edge case, we need to keep track of which direction both entries correspond to.
@@ -80,7 +80,12 @@ function edge_μ_semi_directed(N::HybridNetwork; L::AbstractVector{<:AbstractStr
     end
 
     # @warn "Mappings for root components are not yet computed"
-    return collect(values(mapping))
+    if ignore_leaves
+        leaf_edges = [getparentedge(l) for l in N.leaf]
+        return [val for (key, val) in mapping if !(key[1] in leaf_edges)]
+    else
+        return collect(values(mapping))
+    end
 
 
     # Get the root components of the network, then calculate \mu_R(T) for each root component T
@@ -137,12 +142,12 @@ function gather_root_components(N::HybridNetwork)
 end
 
 
-function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork; semi_directed::Bool=true)
+function edge_μ_dist(N1::HybridNetwork, N2::HybridNetwork; semi_directed::Bool=true, kwargs...)
     (N1.numTaxa == N2.numTaxa && all(t in tipLabels(N2) for t in tipLabels(N1))) || error("N1 and N2 must be defined on the same leaf set.")
 
     L = tipLabels(N1)
-    N1_eμ = semi_directed ? edge_μ_semi_directed(N1; L=L) : error("only semi-directed allowed")
-    N2_eμ = semi_directed ? edge_μ_semi_directed(N2; L=L) : error("only semi-directed allowed")
+    N1_eμ = semi_directed ? edge_μ_semi_directed(N1; L=L, kwargs...) : error("only semi-directed allowed")
+    N2_eμ = semi_directed ? edge_μ_semi_directed(N2; L=L, kwargs...) : error("only semi-directed allowed")
 
     return length(symdiff(N1_eμ, N2_eμ))
 end
